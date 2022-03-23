@@ -1,7 +1,4 @@
-import {
-    AirtableField,
-    AirtableValue,
-} from 'shared/airtable/types';
+import { AirtableField, AirtableValue } from 'shared/airtable/types';
 import {
     ExtensionScreen,
     FormErrors,
