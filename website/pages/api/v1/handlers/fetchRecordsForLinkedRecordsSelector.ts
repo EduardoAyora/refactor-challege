@@ -1,6 +1,7 @@
 import {
     AirtableField,
     AirtableLinkedRecordField,
+    AirtableValue,
 } from 'shared/airtable/types';
 import { v1APIHandler } from 'shared/api/handler-types';
 import {
@@ -21,8 +22,13 @@ import { fetchFieldsForTable } from '../../base-schema/fetchFieldsForTable';
 import { getPrimaryFieldInFields } from '../../base-schema/getPrimaryFieldInFields';
 import { fetchExtensionAndVerifyPassword } from '../../database/extensions/fetchExtension';
 import { fetchLinkedRecords } from '../../helpers/fetchLinkedRecords';
-import { getFieldsNamesToFetchForLinkedRecords } from '../../helpers/getFieldsNamesToFetchForLinkedRecords';
+import { getFieldsNamesToFetchForLinkedRecordsAndFieldNamesToOverride } from '../../helpers/getFieldsNamesToFetchForLinkedRecords';
 import { getNameFromMiniExtFieldWithConfig } from 'shared/extensions/miniExt-field-configs/id-helpers';
+
+type FieldsPreparedToSend = {
+    Name: AirtableValue;
+    subtitle?: AirtableValue;
+};
 
 const getLinkedRecordConfigInFields = (args: {
     fieldName: string;
@@ -122,18 +128,20 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
             .flat()
             .filter(Boolean);
 
-    const fieldNamesToFetch = await getFieldsNamesToFetchForLinkedRecords({
-        extension,
-        allFieldIdsToFieldNamesInBase,
-        primaryFieldInLinkedTable,
-        linkedRecordFieldIdsInMainTable,
-        airtableFieldsInMainTable,
-        airtableFieldsInLinkedTable,
-        fieldIdsNestedInMiniExtLinkedRecordFieldConfig,
-        titleOverrideFieldId,
-        subtitleFieldId,
-    });
-    console.log(fieldNamesToFetch);
+    // We need fieldNamesToOverride because later it helps to identify the fields and get their values
+    // to replace with de originals
+    const { fieldNamesToFetch, fieldNamesToOverride } =
+        await getFieldsNamesToFetchForLinkedRecordsAndFieldNamesToOverride({
+            extension,
+            allFieldIdsToFieldNamesInBase,
+            primaryFieldInLinkedTable,
+            linkedRecordFieldIdsInMainTable,
+            airtableFieldsInMainTable,
+            airtableFieldsInLinkedTable,
+            fieldIdsNestedInMiniExtLinkedRecordFieldConfig,
+            titleOverrideFieldId,
+            subtitleFieldId,
+        });
 
     const miniExtFieldWithConfig = extension.state.formFields.find(
         (field) =>
@@ -214,8 +222,33 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
         }
     }
 
+    const linkedRecordsOnlyWithNameAndSubtitle = linkedRecords.map(
+        (linkedRecord) => {
+            const { fields } = linkedRecord;
+            const { titleOverrideFieldName, subtitleFieldName } =
+                fieldNamesToOverride;
+            const title = titleOverrideFieldName
+                ? fields[titleOverrideFieldName]
+                : fields[primaryFieldInLinkedTable.name];
+
+            const fieldsWithNameAndSubtitle: FieldsPreparedToSend =
+                subtitleFieldName
+                    ? {
+                          Name: title,
+                          subtitle: fields[subtitleFieldName],
+                      }
+                    : {
+                          Name: title,
+                      };
+            return {
+                ...linkedRecord,
+                fields: fieldsWithNameAndSubtitle,
+            };
+        }
+    );
+
     return {
-        records: linkedRecords,
+        records: linkedRecordsOnlyWithNameAndSubtitle,
         offset,
         primaryFieldInLinkedTable,
         linkedTableFieldIdsToAirtableFields,
