@@ -73,13 +73,11 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
         );
     }
 
-    const { titleOverrideFieldId, subtitleFieldId } =
-        linkedRecordFieldInMainTableResult.linkedRecordFieldConfig.options;
-
     const { linkedRecordFieldConfig, linkedRecordFieldIdInMainTable } =
         linkedRecordFieldInMainTableResult;
 
-    const linkedTableId = linkedRecordFieldConfig.options.linkedTableId;
+    const { titleOverrideFieldId, subtitleFieldId, linkedTableId } =
+        linkedRecordFieldConfig.options;
 
     const { fields: airtableFieldsInLinkedTable } = await fetchFieldsForTable({
         userUID: extension.userUID,
