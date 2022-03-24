@@ -403,7 +403,10 @@ const SelectedRecord = (props: {
                     render={(displayValue) => (
                         <div className='flex items-center flex-1'>
                             <p className='overflow-hidden whitespace-nowrap text-ellipsis'>
-                                {displayValue}
+                                {displayValue.Name},
+                            </p>
+                            <p className='text-sm overflow-hidden whitespace-nowrap text-ellipsis text-gray-500 ml-1'>
+                                {displayValue.subtitle}
                             </p>
                         </div>
                     )}
