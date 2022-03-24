@@ -130,7 +130,10 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
         airtableFieldsInMainTable,
         airtableFieldsInLinkedTable,
         fieldIdsNestedInMiniExtLinkedRecordFieldConfig,
+        titleOverrideFieldId,
+        subtitleFieldId,
     });
+    console.log(fieldNamesToFetch);
 
     const miniExtFieldWithConfig = extension.state.formFields.find(
         (field) =>

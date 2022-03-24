@@ -25,6 +25,8 @@ type Params = {
      * IMPORTANT: This is not all of the linked records in the main table.
      */
     linkedRecordFieldIdsInMainTable: string[];
+    titleOverrideFieldId: string | null;
+    subtitleFieldId: string | null;
 };
 
 /**
@@ -43,8 +45,8 @@ export const getFieldsNamesToFetchForLinkedRecords: (
     airtableFieldsInMainTable,
     airtableFieldsInLinkedTable,
     fieldIdsNestedInMiniExtLinkedRecordFieldConfig,
-    titleOverrideFieldName,
-    subtitleFieldName,
+    titleOverrideFieldId,
+    subtitleFieldId,
 }) => {
     const fieldNamesToAirtableFields = airtableFieldsInMainTable.reduce(
         (acc, curr) => {
@@ -104,6 +106,19 @@ export const getFieldsNamesToFetchForLinkedRecords: (
                 }
             }
         }
+    }
+
+    if (titleOverrideFieldId) {
+        const titleOverrideFieldName =
+            allFieldIdsToFieldNamesInBase[titleOverrideFieldId];
+        if (titleOverrideFieldName)
+            fieldsNamesToFetch.add(titleOverrideFieldName);
+    }
+
+    if (subtitleFieldId) {
+        const subtitleFieldName =
+            allFieldIdsToFieldNamesInBase[subtitleFieldId];
+        if (subtitleFieldName) fieldsNamesToFetch.add(subtitleFieldName);
     }
 
     const fieldIdsNestedInMiniExtLinkedRecordFieldConfigSet = new Set(
