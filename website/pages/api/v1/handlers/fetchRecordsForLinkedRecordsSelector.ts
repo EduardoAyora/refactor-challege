@@ -73,6 +73,9 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
         );
     }
 
+    const { titleOverrideFieldId, subtitleFieldId } =
+        linkedRecordFieldInMainTableResult.linkedRecordFieldConfig.options;
+
     const { linkedRecordFieldConfig, linkedRecordFieldIdInMainTable } =
         linkedRecordFieldInMainTableResult;
 

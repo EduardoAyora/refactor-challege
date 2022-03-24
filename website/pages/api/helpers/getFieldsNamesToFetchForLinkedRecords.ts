@@ -43,6 +43,8 @@ export const getFieldsNamesToFetchForLinkedRecords: (
     airtableFieldsInMainTable,
     airtableFieldsInLinkedTable,
     fieldIdsNestedInMiniExtLinkedRecordFieldConfig,
+    titleOverrideFieldName,
+    subtitleFieldName,
 }) => {
     const fieldNamesToAirtableFields = airtableFieldsInMainTable.reduce(
         (acc, curr) => {
