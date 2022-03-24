@@ -155,6 +155,12 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
         );
     }
 
+    const { titleOverrideFieldName, subtitleFieldName } = fieldNamesToOverride;
+
+    const primaryFieldName = titleOverrideFieldName
+        ? titleOverrideFieldName
+        : primaryFieldInLinkedTable.name;
+
     const { records: linkedTableRecords, offset } =
         await fetchAirtableRecordsRESTApi({
             userUID: extension.userUID,
@@ -165,10 +171,10 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
                 fields: fieldNamesToFetch,
                 filterByFormula: `AND(${
                     args.searchTerm !== ''
-                        ? `SEARCH(LOWER("${args.searchTerm}"), LOWER(${primaryFieldInLinkedTable.name}))`
+                        ? `SEARCH(LOWER("${args.searchTerm}"), LOWER(${primaryFieldName}))`
                         : '1'
                 })`,
-                sort: [{ field: primaryFieldInLinkedTable.name }],
+                sort: [{ field: primaryFieldName }],
             },
             offset: args.offset,
         });
@@ -225,8 +231,6 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
     const linkedRecordsOnlyWithNameAndSubtitle = linkedRecords.map(
         (linkedRecord) => {
             const { fields } = linkedRecord;
-            const { titleOverrideFieldName, subtitleFieldName } =
-                fieldNamesToOverride;
             const title = titleOverrideFieldName
                 ? fields[titleOverrideFieldName]
                 : fields[primaryFieldInLinkedTable.name];
