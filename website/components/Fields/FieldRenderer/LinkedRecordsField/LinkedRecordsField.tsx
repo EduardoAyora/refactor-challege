@@ -16,7 +16,10 @@ import {
 } from 'shared/api/types/fetchRecordsForLinkedRecordsSelector';
 import { executeApiRequest } from 'shared/executeApiRequest';
 import debounce from 'shared/helpers/debounce';
-import { LinkedRecordIdsToAirtableRecords } from 'shared/types/linkedRecordsIdsToPrimaryValues';
+import {
+    LinkedRecordIdsToAirtableRecords,
+    PrimaryValues,
+} from 'shared/types/linkedRecordsIdsToPrimaryValues';
 import { assertUnreachable } from 'shared/utils/assertUnreachable';
 import { LoadingState } from 'shared/utils/loadingState';
 
@@ -213,7 +216,9 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
         return debouncedFetchLinkedRecordIdsToPrimaryValues;
     }, [fetchRecordsForLinkedRecordsSelector]);
 
-    const getRecordDisplayValue = (recordId: string): LoadingState<string> => {
+    const getRecordDisplayValue = (
+        recordId: string
+    ): LoadingState<PrimaryValues> => {
         return linkedRecordIdsToPrimaryValues.type === 'loaded'
             ? {
                   type: 'loaded',
@@ -314,7 +319,7 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
 const SelectorList = (props: {
     selectorRecords: AirtableRecord[];
     selectedRecordsIds: string[];
-    getRecordDisplayValue: (recordId: string) => LoadingState<string>;
+    getRecordDisplayValue: (recordId: string) => LoadingState<PrimaryValues>;
     addRecordIdToCellValue: (recordId: string) => void;
     errorMessage: string | null;
 }) => {
@@ -345,7 +350,7 @@ const SelectorList = (props: {
 
 const SelectorListItem = (props: {
     recordId: string;
-    getRecordDisplayValue: (recordId: string) => LoadingState<string>;
+    getRecordDisplayValue: (recordId: string) => LoadingState<PrimaryValues>;
 }) => {
     const recordDisplayValue = props.getRecordDisplayValue(props.recordId);
 
@@ -357,9 +362,22 @@ const SelectorListItem = (props: {
             <RecordDisplayValueView
                 recordDisplayValue={recordDisplayValue}
                 render={(displayValue) => (
-                    <p className={classes.listboxOptionValue(displayValue)}>
-                        {displayValue}
-                    </p>
+                    <div>
+                        {displayValue.Name && (
+                            <p
+                                className={classes.listboxOptionValue(
+                                    displayValue.Name
+                                )}
+                            >
+                                {displayValue.Name}
+                            </p>
+                        )}
+                        {displayValue.subtitle && (
+                            <p className={classes.subtitle}>
+                                {displayValue.subtitle}
+                            </p>
+                        )}
+                    </div>
                 )}
             />
         </Listbox.Option>
@@ -368,7 +386,7 @@ const SelectorListItem = (props: {
 
 const SelectedRecord = (props: {
     recordId: string;
-    recordDisplayValue: LoadingState<string>;
+    recordDisplayValue: LoadingState<PrimaryValues>;
 
     /**
      * Undefined when the field is read-only
@@ -405,8 +423,8 @@ const SelectedRecord = (props: {
 };
 
 const RecordDisplayValueView = (props: {
-    recordDisplayValue: LoadingState<string>;
-    render: (data: string) => JSX.Element;
+    recordDisplayValue: LoadingState<PrimaryValues>;
+    render: (data: PrimaryValues) => JSX.Element;
 }) => {
     switch (props.recordDisplayValue.type) {
         case 'notLoaded':

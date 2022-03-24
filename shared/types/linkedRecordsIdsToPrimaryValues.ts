@@ -1,11 +1,15 @@
 import { AirtableField, AirtableRecord } from '../airtable/types';
 
+export type PrimaryValues = {
+    Name?: string;
+    subtitle?: string;
+};
 /**
  * A map of record IDs to primary values. We don't check the tableId because Airtable records have unique
  * ids for every base.
  */
 export type LinkedRecordsIdsToPrimaryValues = {
-    [recordId: string]: string;
+    [recordId: string]: PrimaryValues;
 };
 
 export type LinkedRecordIdsToAirtableRecords = {

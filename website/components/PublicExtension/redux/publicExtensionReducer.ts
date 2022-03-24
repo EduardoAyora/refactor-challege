@@ -14,7 +14,6 @@ import {
 import { Mutable } from 'shared/types/Mutable';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import { getReadableStringForAirtableValue } from '../../../airtable/getReadableStringForAirtableValue';
 import { makeNeedToSyncBaseErrorMessage } from '../../../utils/makeNeedToSyncBaseErrorMessage';
 import { PublicExtensionState, ScreenState } from './types';
 import { TableIdsToRecordsIdsToFetch } from 'shared/api/types/fetchAllLinkedRecordPrimaryValues';
@@ -232,17 +231,8 @@ export const publicExtensionSlice = createSlice({
                     );
                 }
 
-                const primaryField =
-                    action.payload.linkedTableIdsToPrimaryFields[linkedTableId];
-
                 newLinkedRecordIdsToPrimaryValues[recordId] =
-                    getReadableStringForAirtableValue({
-                        value: recordWithLink.fields[primaryField.name],
-                        linkedRecordIdsToPrimaryValues:
-                            newLinkedRecordIdsToPrimaryValues,
-                        airtableFieldConfig: primaryField.config,
-                        doNotReturnRecordIdsForLinkedRecords: true,
-                    }) || 'Unnamed Record';
+                    recordWithLink.fields;
             }
 
             state.linkedRecordIdsToPrimaryValues = {
