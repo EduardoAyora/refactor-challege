@@ -1,33 +1,22 @@
 import {
     AirtableField,
     AirtableLinkedRecordField,
-    AirtableValue,
 } from 'shared/airtable/types';
 import { v1APIHandler } from 'shared/api/handler-types';
 import {
     FetchRecordsForLinkedRecordsSelectorInput,
     FetchRecordsForLinkedRecordsSelectorOutput,
 } from 'shared/api/types/fetchRecordsForLinkedRecordsSelector';
-import {
-    LinkedRecordIdsToAirtableRecords,
-    LinkedTableIdsToPrimaryFields,
-} from 'shared/types/linkedRecordsIdsToPrimaryValues';
 
 import { FieldType } from '@airtable/blocks/models';
 
-import { getLinkedTableIdsToRecordIds } from '../../../../airtable/linked-records/primary-values';
 import { fetchAirtableRecordsRESTApi } from '../../airtable';
 import { fetchFieldsForTable } from '../../base-schema/fetchFieldsForTable';
 import { getPrimaryFieldInFields } from '../../base-schema/getPrimaryFieldInFields';
 import { fetchExtensionAndVerifyPassword } from '../../database/extensions/fetchExtension';
-import { fetchLinkedRecords } from '../../helpers/fetchLinkedRecords';
 import { getFieldsNamesToFetchForLinkedRecordsAndFieldNamesToOverride } from '../../helpers/getFieldsNamesToFetchForLinkedRecords';
 import { getNameFromMiniExtFieldWithConfig } from 'shared/extensions/miniExt-field-configs/id-helpers';
-
-type FieldsPreparedToSend = {
-    Name: AirtableValue;
-    subtitle?: AirtableValue;
-};
+import { getOverridedTitleAndSubtitleFields } from './utils';
 
 const getLinkedRecordConfigInFields = (args: {
     fieldName: string;
@@ -172,42 +161,6 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
             offset: args.offset,
         });
 
-    const nestedLinkedTableIdsToRecordIds = getLinkedTableIdsToRecordIds({
-        recordsFields: linkedTableRecords.map((record) => record.fields),
-        airtableFieldsUsedByExtensionPublically: new Set(fieldNamesToFetch),
-        fields: airtableFieldsInLinkedTable,
-    });
-
-    let additionalRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords =
-        {};
-    const additionalTableIdsToPrimaryFields: LinkedTableIdsToPrimaryFields = {};
-
-    for (const tableId of Object.keys(nestedLinkedTableIdsToRecordIds)) {
-        const recordIds = nestedLinkedTableIdsToRecordIds[tableId].recordIds;
-        if (recordIds.length === 0) continue;
-        const fields = await fetchFieldsForTable({
-            userUID: extension.userUID,
-            baseId: extension.baseId,
-            tableId,
-            totalRemainingTriesToResolveLookupLinkedRecordFields: 3,
-        });
-        const primaryField = getPrimaryFieldInFields(fields);
-        additionalTableIdsToPrimaryFields[tableId] = primaryField;
-
-        const moreLinkedRecords = await fetchLinkedRecords({
-            baseId: extension.baseId,
-            userUID: extension.userUID,
-            tableId,
-            fieldNamesToFetch: [primaryField.name],
-            recordIds,
-        });
-
-        additionalRecordIdsToAirtableRecords = {
-            ...additionalRecordIdsToAirtableRecords,
-            ...moreLinkedRecords,
-        };
-    }
-
     const linkedRecords = linkedTableRecords;
 
     for (const record of linkedRecords) {
@@ -224,21 +177,16 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
     const linkedRecordsOnlyWithNameAndSubtitle = linkedRecords.map(
         (linkedRecord) => {
             const { fields } = linkedRecord;
-            const title = titleOverrideFieldName
-                ? fields[titleOverrideFieldName]
-                : fields[primaryFieldInLinkedTable.name];
-
-            const fieldsWithNameAndSubtitle: FieldsPreparedToSend =
-                subtitleFieldName
-                    ? {
-                          Name: title,
-                          subtitle: fields[subtitleFieldName],
-                      }
-                    : {
-                          Name: title,
-                      };
+            const fieldsWithNameAndSubtitle =
+                getOverridedTitleAndSubtitleFields({
+                    fields,
+                    primaryFieldNameInLinkedTable:
+                        primaryFieldInLinkedTable.name,
+                    titleOverrideFieldName,
+                    subtitleFieldName,
+                });
             return {
-                ...linkedRecord,
+                id: linkedRecord.id,
                 fields: fieldsWithNameAndSubtitle,
             };
         }
