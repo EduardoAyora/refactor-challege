@@ -39,11 +39,11 @@ export const fetchInitialLinkedRecords: v1APIHandler<
 
     let linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords = {};
 
-    console.log(args.linkedTableIdsToRecordIds);
-
     for (const linkedTableId of Object.keys(args.linkedTableIdsToRecordIds)) {
         const { recordIds, linkedRecordFieldIdsInMainTable } =
             args.linkedTableIdsToRecordIds[linkedTableId];
+
+        if (recordIds.length === 0) continue;
 
         const { fields: airtableFieldsInLinkedTable } =
             await fetchFieldsForTable({
@@ -81,62 +81,49 @@ export const fetchInitialLinkedRecords: v1APIHandler<
                 subtitleFieldId,
             });
 
-        if (recordIds.length > 0) {
-            const nestedRecordsIds =
-                recordIds.length > 100
-                    ? chunkArray(recordIds, 100)
-                    : [recordIds];
+        const nestedRecordsIds =
+            recordIds.length > 100 ? chunkArray(recordIds, 100) : [recordIds];
 
-            // const currentLinkedTableFieldsIdsToAirtableFields: FieldIdsToAirtableFields =
-            //     airtableFieldsInLinkedTable.reduce((acc, field) => {
-            //         acc[field.id] = field
-            //         return acc
-            //     }, {} as FieldIdsToAirtableFields)
+        for (const recordIds of nestedRecordsIds) {
+            const moreLinkedRecordsWithLinks = await fetchLinkedRecords({
+                tableId: linkedTableId,
+                baseId: extension.baseId,
+                userUID: extension.userUID,
+                fieldNamesToFetch,
+                recordIds,
+            });
 
-            for (const recordIds of nestedRecordsIds) {
-                const moreLinkedRecordsWithLinks = await fetchLinkedRecords({
-                    tableId: linkedTableId,
-                    baseId: extension.baseId,
-                    userUID: extension.userUID,
-                    fieldNamesToFetch,
-                    recordIds,
-                });
+            const moreLinkedRecordsWithLinksAndOverridedTitleAndSubtitle: LinkedRecordIdsToAirtableRecords =
+                Object.keys(moreLinkedRecordsWithLinks).reduce(
+                    (acc, recordId) => {
+                        const { fields } = moreLinkedRecordsWithLinks[recordId];
+                        const { titleOverrideFieldName, subtitleFieldName } =
+                            fieldNamesToOverride;
 
-                const moreLinkedRecordsWithLinksAndOverridedTitleAndSubtitle: LinkedRecordIdsToAirtableRecords =
-                    Object.keys(moreLinkedRecordsWithLinks).reduce(
-                        (acc, recordId) => {
-                            const { fields } =
-                                moreLinkedRecordsWithLinks[recordId];
-                            const {
+                        const titleAndSubtitleFields =
+                            getOverridedTitleAndSubtitleFields({
+                                fields,
+                                primaryFieldNameInLinkedTable:
+                                    primaryFieldInLinkedTable.name,
                                 titleOverrideFieldName,
                                 subtitleFieldName,
-                            } = fieldNamesToOverride;
+                            });
 
-                            const titleAndSubtitleFields =
-                                getOverridedTitleAndSubtitleFields({
-                                    fields,
-                                    primaryFieldNameInLinkedTable:
-                                        primaryFieldInLinkedTable.name,
-                                    titleOverrideFieldName,
-                                    subtitleFieldName,
-                                });
+                        return {
+                            ...acc,
+                            [recordId]: {
+                                id: moreLinkedRecordsWithLinks[recordId].id,
+                                fields: titleAndSubtitleFields,
+                            },
+                        };
+                    },
+                    {} as LinkedRecordIdsToAirtableRecords
+                );
 
-                            return {
-                                ...acc,
-                                [recordId]: {
-                                    id: moreLinkedRecordsWithLinks[recordId].id,
-                                    fields: titleAndSubtitleFields,
-                                },
-                            };
-                        },
-                        {} as LinkedRecordIdsToAirtableRecords
-                    );
-
-                linkedRecordIdsToAirtableRecords = {
-                    ...linkedRecordIdsToAirtableRecords,
-                    ...moreLinkedRecordsWithLinksAndOverridedTitleAndSubtitle,
-                };
-            }
+            linkedRecordIdsToAirtableRecords = {
+                ...linkedRecordIdsToAirtableRecords,
+                ...moreLinkedRecordsWithLinksAndOverridedTitleAndSubtitle,
+            };
         }
     }
 
