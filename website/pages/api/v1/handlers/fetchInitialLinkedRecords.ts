@@ -11,7 +11,6 @@ import {
 import {
     FieldIdsToAirtableFields,
     LinkedRecordIdsToAirtableRecords,
-    LinkedTableIdsToPrimaryFields,
 } from 'shared/types/linkedRecordsIdsToPrimaryValues';
 import { chunkArray } from 'shared/utils/chunkArray';
 
@@ -63,8 +62,6 @@ export const fetchInitialLinkedRecords: v1APIHandler<
     } = linkedRecordFieldConfig;
 
     let linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords = {};
-    const linkedTableIdsToPrimaryFields: LinkedTableIdsToPrimaryFields = {};
-    const linkedTableFieldIdsToAirtableFields: FieldIdsToAirtableFields = {};
 
     for (const linkedTableId of Object.keys(args.linkedTableIdsToRecordIds)) {
         const { recordIds, linkedRecordFieldIdsInMainTable } =
@@ -82,7 +79,6 @@ export const fetchInitialLinkedRecords: v1APIHandler<
             {};
 
         airtableFieldsInLinkedTable.forEach((field) => {
-            linkedTableFieldIdsToAirtableFields[field.id] = field;
             currentLinkedTableFieldsIdsToAirtableFields[field.id] = field;
         });
 
@@ -113,9 +109,6 @@ export const fetchInitialLinkedRecords: v1APIHandler<
                 titleOverrideFieldId,
                 subtitleFieldId,
             });
-
-        linkedTableIdsToPrimaryFields[linkedTableId] =
-            primaryFieldInLinkedTable;
 
         if (recordIds.length > 0) {
             const nestedRecordsIds =
