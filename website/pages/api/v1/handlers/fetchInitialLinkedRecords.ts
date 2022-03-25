@@ -1,8 +1,3 @@
-import { FieldType } from '@airtable/blocks/models';
-import {
-    AirtableField,
-    AirtableLinkedRecordField,
-} from 'shared/airtable/types';
 import { v1APIHandler } from 'shared/api/handler-types';
 import {
     FetchInitialLinkedRecordsInput,
@@ -19,16 +14,7 @@ import { getPrimaryFieldInFields } from '../../base-schema/getPrimaryFieldInFiel
 import { fetchExtensionAndVerifyPassword } from '../../database/extensions/fetchExtension';
 import { fetchLinkedRecords } from '../../helpers/fetchLinkedRecords';
 import { getFieldsNamesToFetchForLinkedRecordsAndFieldNamesToOverride } from '../../helpers/getFieldsNamesToFetchForLinkedRecords';
-
-const getLinkedRecordConfig = (
-    fields: AirtableField[]
-): AirtableLinkedRecordField['config'] | null => {
-    for (const field of fields) {
-        if (field.config.type === FieldType.MULTIPLE_RECORD_LINKS)
-            return field.config;
-    }
-    return null;
-};
+import { getLinkedRecordConfig } from './utils';
 
 export const fetchInitialLinkedRecords: v1APIHandler<
     FetchInitialLinkedRecordsInput,
@@ -47,19 +33,9 @@ export const fetchInitialLinkedRecords: v1APIHandler<
         totalRemainingTriesToResolveLookupLinkedRecordFields: 3,
     });
 
-    const linkedRecordFieldConfig = getLinkedRecordConfig(
-        airtableFieldsInMainTable
-    );
-
-    if (!linkedRecordFieldConfig) {
-        throw new Error(
-            'Could not fetch records because the linked records field was not found in the table.'
-        );
-    }
-
     const {
         options: { titleOverrideFieldId, subtitleFieldId },
-    } = linkedRecordFieldConfig;
+    } = getLinkedRecordConfig(airtableFieldsInMainTable);
 
     let linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords = {};
 
