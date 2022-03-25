@@ -9,7 +9,6 @@ import {
     FetchRecordsForLinkedRecordsSelectorOutput,
 } from 'shared/api/types/fetchRecordsForLinkedRecordsSelector';
 import {
-    FieldIdsToAirtableFields,
     LinkedRecordIdsToAirtableRecords,
     LinkedTableIdsToPrimaryFields,
 } from 'shared/types/linkedRecordsIdsToPrimaryValues';
@@ -101,12 +100,6 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
               view: linkedRecordFieldConfig.options.viewIdForRecordSelection,
           }
         : {};
-
-    const linkedTableFieldIdsToAirtableFields: FieldIdsToAirtableFields =
-        airtableFieldsInLinkedTable.reduce((acc, curr) => {
-            acc[curr.id] = curr;
-            return acc;
-        }, {} as FieldIdsToAirtableFields);
 
     const linkedRecordsAirtableField = airtableFieldsInMainTable.find(
         (field) => field.name === args.linkedRecordFieldName
@@ -254,10 +247,6 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
     return {
         records: linkedRecordsOnlyWithNameAndSubtitle,
         offset,
-        primaryFieldInLinkedTable,
-        linkedTableFieldIdsToAirtableFields,
-        additionalTableIdsToPrimaryFields,
-        additionalRecordIdsToAirtableRecords,
     };
 };
 
