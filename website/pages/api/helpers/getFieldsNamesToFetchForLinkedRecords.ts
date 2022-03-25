@@ -25,8 +25,8 @@ type Params = {
      * IMPORTANT: This is not all of the linked records in the main table.
      */
     linkedRecordFieldIdsInMainTable: string[];
-    titleOverrideFieldId: string | null;
-    subtitleFieldId: string | null;
+    titleOverrideFieldId?: string | null;
+    subtitleFieldId?: string | null;
 };
 
 /**
