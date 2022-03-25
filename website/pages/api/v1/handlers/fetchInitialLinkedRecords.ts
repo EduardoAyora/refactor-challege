@@ -166,8 +166,6 @@ export const fetchInitialLinkedRecords: v1APIHandler<
 
     return {
         linkedRecordIdsToAirtableRecords,
-        linkedTableIdsToPrimaryFields,
-        linkedTableFieldIdsToAirtableFields,
     };
 };
 

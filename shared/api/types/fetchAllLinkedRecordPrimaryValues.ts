@@ -1,8 +1,4 @@
-import {
-    FieldIdsToAirtableFields,
-    LinkedRecordIdsToAirtableRecords,
-    LinkedTableIdsToPrimaryFields,
-} from '../../types/linkedRecordsIdsToPrimaryValues';
+import { LinkedRecordIdsToAirtableRecords } from '../../types/linkedRecordsIdsToPrimaryValues';
 
 export type TableIdsToRecordsIdsToFetch = {
     [tableId: string]: {
@@ -17,6 +13,4 @@ export type FetchInitialLinkedRecordsInput = {
 
 export type FetchInitialLinkedRecordsOutput = {
     linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords;
-    linkedTableIdsToPrimaryFields: LinkedTableIdsToPrimaryFields;
-    linkedTableFieldIdsToAirtableFields: FieldIdsToAirtableFields;
 };
