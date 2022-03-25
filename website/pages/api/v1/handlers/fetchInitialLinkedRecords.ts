@@ -3,10 +3,7 @@ import {
     FetchInitialLinkedRecordsInput,
     FetchInitialLinkedRecordsOutput,
 } from 'shared/api/types/fetchAllLinkedRecordPrimaryValues';
-import {
-    FieldIdsToAirtableFields,
-    LinkedRecordIdsToAirtableRecords,
-} from 'shared/types/linkedRecordsIdsToPrimaryValues';
+import { LinkedRecordIdsToAirtableRecords } from 'shared/types/linkedRecordsIdsToPrimaryValues';
 import { chunkArray } from 'shared/utils/chunkArray';
 
 import { fetchFieldsForTable } from '../../base-schema/fetchFieldsForTable';
@@ -39,6 +36,8 @@ export const fetchInitialLinkedRecords: v1APIHandler<
 
     let linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords = {};
 
+    console.log(args.linkedTableIdsToRecordIds);
+
     for (const linkedTableId of Object.keys(args.linkedTableIdsToRecordIds)) {
         const { recordIds, linkedRecordFieldIdsInMainTable } =
             args.linkedTableIdsToRecordIds[linkedTableId];
@@ -50,13 +49,6 @@ export const fetchInitialLinkedRecords: v1APIHandler<
                 tableId: linkedTableId,
                 totalRemainingTriesToResolveLookupLinkedRecordFields: 3,
             });
-
-        const currentLinkedTableFieldsIdsToAirtableFields: FieldIdsToAirtableFields =
-            {};
-
-        airtableFieldsInLinkedTable.forEach((field) => {
-            currentLinkedTableFieldsIdsToAirtableFields[field.id] = field;
-        });
 
         const primaryFieldInLinkedTable = getPrimaryFieldInFields({
             fields: airtableFieldsInLinkedTable,
@@ -92,6 +84,12 @@ export const fetchInitialLinkedRecords: v1APIHandler<
                     ? chunkArray(recordIds, 100)
                     : [recordIds];
 
+            // const currentLinkedTableFieldsIdsToAirtableFields: FieldIdsToAirtableFields =
+            //     airtableFieldsInLinkedTable.reduce((acc, field) => {
+            //         acc[field.id] = field
+            //         return acc
+            //     }, {} as FieldIdsToAirtableFields)
+
             for (const recordIds of nestedRecordsIds) {
                 const moreLinkedRecordsWithLinks = await fetchLinkedRecords({
                     tableId: linkedTableId,
@@ -101,33 +99,43 @@ export const fetchInitialLinkedRecords: v1APIHandler<
                     recordIds,
                 });
 
-                for (const recordId of Object.keys(
-                    moreLinkedRecordsWithLinks
-                )) {
-                    const { fields } = moreLinkedRecordsWithLinks[recordId];
-                    const { titleOverrideFieldName, subtitleFieldName } =
-                        fieldNamesToOverride;
+                const moreLinkedRecordsWithLinksAndOverridedFields: LinkedRecordIdsToAirtableRecords =
+                    Object.keys(moreLinkedRecordsWithLinks).reduce(
+                        (acc, recordId) => {
+                            const { fields } =
+                                moreLinkedRecordsWithLinks[recordId];
+                            const {
+                                titleOverrideFieldName,
+                                subtitleFieldName,
+                            } = fieldNamesToOverride;
 
-                    const title = titleOverrideFieldName
-                        ? fields[titleOverrideFieldName]
-                        : fields[primaryFieldInLinkedTable.name];
+                            const title = titleOverrideFieldName
+                                ? fields[titleOverrideFieldName]
+                                : fields[primaryFieldInLinkedTable.name];
 
-                    const fieldsWithNameAndSubtitle = subtitleFieldName
-                        ? {
-                              Name: title,
-                              subtitle: fields[subtitleFieldName],
-                          }
-                        : {
-                              Name: title,
-                          };
+                            const fieldsWithNameAndSubtitle = subtitleFieldName
+                                ? {
+                                      Name: title,
+                                      subtitle: fields[subtitleFieldName],
+                                  }
+                                : {
+                                      Name: title,
+                                  };
 
-                    moreLinkedRecordsWithLinks[recordId].fields =
-                        fieldsWithNameAndSubtitle;
-                }
+                            return {
+                                ...acc,
+                                [recordId]: {
+                                    id: moreLinkedRecordsWithLinks[recordId].id,
+                                    fields: fieldsWithNameAndSubtitle,
+                                },
+                            };
+                        },
+                        {} as LinkedRecordIdsToAirtableRecords
+                    );
 
                 linkedRecordIdsToAirtableRecords = {
                     ...linkedRecordIdsToAirtableRecords,
-                    ...moreLinkedRecordsWithLinks,
+                    ...moreLinkedRecordsWithLinksAndOverridedFields,
                 };
             }
         }
