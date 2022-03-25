@@ -6,10 +6,8 @@ import {
 } from 'shared/api/types/loadExtension';
 
 import {
-    FieldIdsToAirtableFields,
     LinkedRecordIdsToAirtableRecords,
     LinkedRecordsIdsToPrimaryValues,
-    LinkedTableIdsToPrimaryFields,
 } from 'shared/types/linkedRecordsIdsToPrimaryValues';
 import { Mutable } from 'shared/types/Mutable';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
@@ -191,7 +189,6 @@ export const publicExtensionSlice = createSlice({
             action: PayloadAction<{
                 linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords;
                 linkedTableIdsToRecordIds: TableIdsToRecordsIdsToFetch;
-                linkedTableIdsToPrimaryFields: LinkedTableIdsToPrimaryFields;
             }>
         ) => {
             const newLinkedRecordIdsToPrimaryValues =
@@ -265,7 +262,6 @@ export const publicExtensionSlice = createSlice({
             state,
             action: PayloadAction<{
                 linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords;
-                linkedTableFieldIdsToAirtableFields: FieldIdsToAirtableFields;
             }>
         ) => {
             const existingLinkedRecordIdsToAirtableRecords =
@@ -291,7 +287,6 @@ export const publicExtensionSlice = createSlice({
                 type: 'loaded',
                 data: {
                     ...existinglinkedTablesFieldsIdsToAirtableFields,
-                    ...action.payload.linkedTableFieldIdsToAirtableFields,
                 },
             };
 

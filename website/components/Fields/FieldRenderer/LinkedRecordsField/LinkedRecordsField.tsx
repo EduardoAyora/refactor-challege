@@ -147,12 +147,6 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
                     dispatch(
                         publicExtensionActions.addMorePrimaryValuesUsingPrimaryFieldsAndRecords(
                             {
-                                linkedTableIdsToPrimaryFields: {
-                                    ...result.data
-                                        .additionalTableIdsToPrimaryFields,
-                                    [linkedTableId]:
-                                        result.data.primaryFieldInLinkedTable,
-                                },
                                 linkedTableIdsToRecordIds: {
                                     [linkedTableId]: {
                                         recordIds: Object.keys(
@@ -164,8 +158,6 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
                                     },
                                 },
                                 linkedRecordIdsToAirtableRecords: {
-                                    ...result.data
-                                        .additionalRecordIdsToAirtableRecords,
                                     ...linkedRecordIdsToAirtableRecordsForSearchResult,
                                 },
                             }
@@ -177,10 +169,6 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
                             {
                                 linkedRecordIdsToAirtableRecords:
                                     linkedRecordIdsToAirtableRecordsForSearchResult,
-
-                                linkedTableFieldIdsToAirtableFields:
-                                    result.data
-                                        .linkedTableFieldIdsToAirtableFields,
                             }
                         )
                     );
