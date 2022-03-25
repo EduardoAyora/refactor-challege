@@ -11,7 +11,10 @@ import { getPrimaryFieldInFields } from '../../base-schema/getPrimaryFieldInFiel
 import { fetchExtensionAndVerifyPassword } from '../../database/extensions/fetchExtension';
 import { fetchLinkedRecords } from '../../helpers/fetchLinkedRecords';
 import { getFieldsNamesToFetchForLinkedRecordsAndFieldNamesToOverride } from '../../helpers/getFieldsNamesToFetchForLinkedRecords';
-import { getLinkedRecordConfig } from './utils';
+import {
+    getLinkedRecordConfig,
+    getOverridedTitleAndSubtitleFields,
+} from './utils';
 
 export const fetchInitialLinkedRecords: v1APIHandler<
     FetchInitialLinkedRecordsInput,
@@ -99,7 +102,7 @@ export const fetchInitialLinkedRecords: v1APIHandler<
                     recordIds,
                 });
 
-                const moreLinkedRecordsWithLinksAndOverridedFields: LinkedRecordIdsToAirtableRecords =
+                const moreLinkedRecordsWithLinksAndOverridedTitleAndSubtitle: LinkedRecordIdsToAirtableRecords =
                     Object.keys(moreLinkedRecordsWithLinks).reduce(
                         (acc, recordId) => {
                             const { fields } =
@@ -109,24 +112,20 @@ export const fetchInitialLinkedRecords: v1APIHandler<
                                 subtitleFieldName,
                             } = fieldNamesToOverride;
 
-                            const title = titleOverrideFieldName
-                                ? fields[titleOverrideFieldName]
-                                : fields[primaryFieldInLinkedTable.name];
-
-                            const fieldsWithNameAndSubtitle = subtitleFieldName
-                                ? {
-                                      Name: title,
-                                      subtitle: fields[subtitleFieldName],
-                                  }
-                                : {
-                                      Name: title,
-                                  };
+                            const titleAndSubtitleFields =
+                                getOverridedTitleAndSubtitleFields({
+                                    fields,
+                                    primaryFieldNameInLinkedTable:
+                                        primaryFieldInLinkedTable.name,
+                                    titleOverrideFieldName,
+                                    subtitleFieldName,
+                                });
 
                             return {
                                 ...acc,
                                 [recordId]: {
                                     id: moreLinkedRecordsWithLinks[recordId].id,
-                                    fields: fieldsWithNameAndSubtitle,
+                                    fields: titleAndSubtitleFields,
                                 },
                             };
                         },
@@ -135,7 +134,7 @@ export const fetchInitialLinkedRecords: v1APIHandler<
 
                 linkedRecordIdsToAirtableRecords = {
                     ...linkedRecordIdsToAirtableRecords,
-                    ...moreLinkedRecordsWithLinksAndOverridedFields,
+                    ...moreLinkedRecordsWithLinksAndOverridedTitleAndSubtitle,
                 };
             }
         }

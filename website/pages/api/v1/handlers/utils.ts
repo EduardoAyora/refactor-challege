@@ -1,6 +1,7 @@
 import { FieldType } from '@airtable/blocks/models';
 import {
     AirtableField,
+    AirtableFieldSet,
     AirtableLinkedRecordField,
 } from 'shared/airtable/types';
 
@@ -28,4 +29,30 @@ export const getLinkedRecordConfig = (
     }
 
     return linkedRecordFieldConfig;
+};
+
+export const getOverridedTitleAndSubtitleFields = ({
+    fields,
+    primaryFieldNameInLinkedTable,
+    titleOverrideFieldName,
+    subtitleFieldName,
+}: {
+    fields: AirtableFieldSet;
+    primaryFieldNameInLinkedTable: string;
+    titleOverrideFieldName?: string;
+    subtitleFieldName?: string;
+}) => {
+    const title = titleOverrideFieldName
+        ? fields[titleOverrideFieldName]
+        : fields[primaryFieldNameInLinkedTable];
+
+    const fieldsWithNameAndSubtitle = subtitleFieldName
+        ? {
+              Name: title,
+              subtitle: fields[subtitleFieldName],
+          }
+        : {
+              Name: title,
+          };
+    return fieldsWithNameAndSubtitle;
 };
