@@ -60,6 +60,7 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
     });
 
     const dispatch = useAppDispatch();
+
     const linkedRecordIdsToPrimaryValues = useLinkedRecordIdsToPrimaryValues();
     const offset = useRef<string | null>(null);
     const lastFetchUnixEpoch = useRef<number | null>(null);
