@@ -164,15 +164,6 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
                             }
                         )
                     );
-
-                    dispatch(
-                        publicExtensionActions.addMoreLinkedRecordIdsToAirtableRecords(
-                            {
-                                linkedRecordIdsToAirtableRecords:
-                                    linkedRecordIdsToAirtableRecordsForSearchResult,
-                            }
-                        )
-                    );
                 } else {
                     throw new Error(result.message);
                 }

@@ -236,6 +236,11 @@ export const publicExtensionSlice = createSlice({
                 type: 'loaded',
                 data: newLinkedRecordIdsToPrimaryValues,
             };
+
+            console.log(state.linkedRecordIdsToAirtableRecords);
+            console.log(state.linkedRecordIdsToPrimaryValues);
+            console.log(state.linkedTableFieldIdsToAirtableFields);
+            console.log(state.sessionIdsToScreenStates);
         },
 
         addMoreLinkedRecordIdsToPrimaryValues: (
@@ -256,41 +261,6 @@ export const publicExtensionSlice = createSlice({
                     ...action.payload.linkedRecordIdsToPrimaryValues,
                 },
             };
-        },
-
-        addMoreLinkedRecordIdsToAirtableRecords: (
-            state,
-            action: PayloadAction<{
-                linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords;
-            }>
-        ) => {
-            const existingLinkedRecordIdsToAirtableRecords =
-                state.linkedRecordIdsToAirtableRecords.type === 'loaded'
-                    ? state.linkedRecordIdsToAirtableRecords.data
-                    : {};
-
-            state.linkedRecordIdsToAirtableRecords = {
-                type: 'loaded',
-                data: {
-                    ...existingLinkedRecordIdsToAirtableRecords,
-                    ...(action.payload
-                        .linkedRecordIdsToAirtableRecords as Mutable<LinkedRecordIdsToAirtableRecords>),
-                },
-            };
-
-            const existinglinkedTablesFieldsIdsToAirtableFields =
-                state.linkedTableFieldIdsToAirtableFields.type === 'loaded'
-                    ? state.linkedTableFieldIdsToAirtableFields.data
-                    : {};
-
-            state.linkedTableFieldIdsToAirtableFields = {
-                type: 'loaded',
-                data: {
-                    ...existinglinkedTablesFieldsIdsToAirtableFields,
-                },
-            };
-
-            return state;
         },
 
         linkedRecordIdsToPrimaryValuesFailed: (
