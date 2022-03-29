@@ -3,11 +3,7 @@ import {
     FormLoadedOutputData,
 } from 'shared/api/types/loadExtension';
 import { ExecuteApiRequestResult } from 'shared/executeApiRequest';
-import {
-    FieldIdsToAirtableFields,
-    LinkedRecordIdsToAirtableRecords,
-    LinkedRecordsIdsToPrimaryValues,
-} from 'shared/types/linkedRecordsIdsToPrimaryValues';
+import { LinkedRecordsIdsToPrimaryValues } from 'shared/types/linkedRecordsIdsToPrimaryValues';
 import { LoadingState } from 'shared/utils/loadingState';
 
 export type PublicExtensionExecuteApiRequestResultForLoadedScreen =
@@ -35,6 +31,4 @@ export type PublicExtensionState = {
      */
     sessionIdsToScreenStates: SessionIdsToScreenStates;
     linkedRecordIdsToPrimaryValues: LoadingState<LinkedRecordsIdsToPrimaryValues>;
-    linkedRecordIdsToAirtableRecords: LoadingState<LinkedRecordIdsToAirtableRecords>;
-    linkedTableFieldIdsToAirtableFields: LoadingState<FieldIdsToAirtableFields>;
 };

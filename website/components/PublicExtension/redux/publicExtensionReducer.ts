@@ -28,10 +28,6 @@ const initialState: PublicExtensionState = {
     linkedRecordIdsToPrimaryValues: {
         type: 'notLoaded',
     },
-    linkedRecordIdsToAirtableRecords: {
-        type: 'notLoaded',
-    },
-    linkedTableFieldIdsToAirtableFields: { type: 'notLoaded' },
 };
 
 const getScreenStateInStateForExtensionId = (args: {
@@ -236,11 +232,6 @@ export const publicExtensionSlice = createSlice({
                 type: 'loaded',
                 data: newLinkedRecordIdsToPrimaryValues,
             };
-
-            console.log(state.linkedRecordIdsToAirtableRecords);
-            console.log(state.linkedRecordIdsToPrimaryValues);
-            console.log(state.linkedTableFieldIdsToAirtableFields);
-            console.log(state.sessionIdsToScreenStates);
         },
 
         addMoreLinkedRecordIdsToPrimaryValues: (
