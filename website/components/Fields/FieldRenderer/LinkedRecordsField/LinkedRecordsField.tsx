@@ -16,7 +16,10 @@ import {
 } from 'shared/api/types/fetchRecordsForLinkedRecordsSelector';
 import { executeApiRequest } from 'shared/executeApiRequest';
 import debounce from 'shared/helpers/debounce';
-import { LinkedRecordIdsToAirtableRecords } from 'shared/types/linkedRecordsIdsToPrimaryValues';
+import {
+    LinkedRecordIdsToAirtableRecords,
+    PrimaryValues,
+} from 'shared/types/linkedRecordsIdsToPrimaryValues';
 import { assertUnreachable } from 'shared/utils/assertUnreachable';
 import { LoadingState } from 'shared/utils/loadingState';
 
@@ -57,13 +60,12 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
     });
 
     const dispatch = useAppDispatch();
+
     const linkedRecordIdsToPrimaryValues = useLinkedRecordIdsToPrimaryValues();
     const offset = useRef<string | null>(null);
     const lastFetchUnixEpoch = useRef<number | null>(null);
 
     const selectedRecordsIds = props.value || emptyValueForLinkedRecords;
-
-    const linkedTableId = props.airtableField.config.options.linkedTableId;
 
     useEffect(() => {
         if (inView) fetchRecordsForLinkedRecordsSelector(searchTerm);
@@ -102,14 +104,12 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
         async (searchTerm: string) => {
             const unixEpoch = Date.now();
             // Early return to avoid excessive fetching
-            if (Number(lastFetchUnixEpoch.current) > unixEpoch - 200) {
-                return;
-            }
+            if (Number(lastFetchUnixEpoch.current) > unixEpoch - 200) return;
+
             lastFetchUnixEpoch.current = unixEpoch;
 
-            if (!offset.current) {
-                setIsLoading(true);
-            }
+            if (!offset.current) setIsLoading(true);
+
             try {
                 const result = await executeApiRequest<
                     FetchRecordsForLinkedRecordsSelectorInput,
@@ -125,65 +125,33 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
                         type: 'website',
                     },
                 });
-                if (result.type === 'success') {
-                    if (offset.current) {
-                        setSelectorRecords((oldRecords) =>
-                            oldRecords.concat(result.data.records)
-                        );
-                    } else {
-                        setSelectorRecords(result.data.records);
-                    }
-                    offset.current = result.data.offset;
 
-                    const linkedRecordIdsToAirtableRecordsForSearchResult =
-                        result.data.records.reduce((acc, curr) => {
-                            acc[curr.id] = curr;
-                            return acc;
-                        }, {} as LinkedRecordIdsToAirtableRecords);
+                if (result.type !== 'success') throw new Error(result.message);
 
-                    dispatch(
-                        publicExtensionActions.addMorePrimaryValuesUsingPrimaryFieldsAndRecords(
-                            {
-                                linkedTableIdsToPrimaryFields: {
-                                    ...result.data
-                                        .additionalTableIdsToPrimaryFields,
-                                    [linkedTableId]:
-                                        result.data.primaryFieldInLinkedTable,
-                                },
-                                linkedTableIdsToRecordIds: {
-                                    [linkedTableId]: {
-                                        recordIds: Object.keys(
-                                            linkedRecordIdsToAirtableRecordsForSearchResult
-                                        ),
-                                        linkedRecordFieldIdsInMainTable: [
-                                            props.airtableField.id,
-                                        ],
-                                    },
-                                },
-                                linkedRecordIdsToAirtableRecords: {
-                                    ...result.data
-                                        .additionalRecordIdsToAirtableRecords,
-                                    ...linkedRecordIdsToAirtableRecordsForSearchResult,
-                                },
-                            }
-                        )
-                    );
-
-                    dispatch(
-                        publicExtensionActions.addMoreLinkedRecordIdsToAirtableRecords(
-                            {
-                                linkedRecordIdsToAirtableRecords:
-                                    linkedRecordIdsToAirtableRecordsForSearchResult,
-
-                                linkedTableFieldIdsToAirtableFields:
-                                    result.data
-                                        .linkedTableFieldIdsToAirtableFields,
-                            }
-                        )
+                if (offset.current) {
+                    setSelectorRecords((oldRecords) =>
+                        oldRecords.concat(result.data.records)
                     );
                 } else {
-                    throw new Error(result.message);
+                    setSelectorRecords(result.data.records);
                 }
+                offset.current = result.data.offset;
+
+                const linkedRecordIdsToAirtableRecordsForSearchResult =
+                    result.data.records.reduce((acc, curr) => {
+                        acc[curr.id] = curr;
+                        return acc;
+                    }, {} as LinkedRecordIdsToAirtableRecords);
+
+                dispatch(
+                    publicExtensionActions.addMorePrimaryValuesUsingPrimaryFieldsAndRecords(
+                        {
+                            linkedRecordIdsToAirtableRecords: {
+                                ...linkedRecordIdsToAirtableRecordsForSearchResult,
+                            },
+                        }
+                    )
+                );
             } catch (error) {
                 simpleLogError(error);
                 setErrorMessage(
@@ -194,12 +162,7 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
                 setShouldFetchRecords(false);
             }
         },
-        [
-            props.airtableField.name,
-            props.airtableField.id,
-            dispatch,
-            linkedTableId,
-        ]
+        [props.airtableField.name, dispatch]
     );
 
     const fetchLinkedRecordIdsToPrimaryValuesWithDebounce = useMemo(() => {
@@ -213,7 +176,9 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
         return debouncedFetchLinkedRecordIdsToPrimaryValues;
     }, [fetchRecordsForLinkedRecordsSelector]);
 
-    const getRecordDisplayValue = (recordId: string): LoadingState<string> => {
+    const getRecordDisplayValue = (
+        recordId: string
+    ): LoadingState<PrimaryValues> => {
         return linkedRecordIdsToPrimaryValues.type === 'loaded'
             ? {
                   type: 'loaded',
@@ -314,7 +279,7 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
 const SelectorList = (props: {
     selectorRecords: AirtableRecord[];
     selectedRecordsIds: string[];
-    getRecordDisplayValue: (recordId: string) => LoadingState<string>;
+    getRecordDisplayValue: (recordId: string) => LoadingState<PrimaryValues>;
     addRecordIdToCellValue: (recordId: string) => void;
     errorMessage: string | null;
 }) => {
@@ -345,7 +310,7 @@ const SelectorList = (props: {
 
 const SelectorListItem = (props: {
     recordId: string;
-    getRecordDisplayValue: (recordId: string) => LoadingState<string>;
+    getRecordDisplayValue: (recordId: string) => LoadingState<PrimaryValues>;
 }) => {
     const recordDisplayValue = props.getRecordDisplayValue(props.recordId);
 
@@ -357,9 +322,22 @@ const SelectorListItem = (props: {
             <RecordDisplayValueView
                 recordDisplayValue={recordDisplayValue}
                 render={(displayValue) => (
-                    <p className={classes.listboxOptionValue(displayValue)}>
-                        {displayValue}
-                    </p>
+                    <div>
+                        {displayValue.Name && (
+                            <p
+                                className={classes.listboxOptionValue(
+                                    displayValue.Name
+                                )}
+                            >
+                                {displayValue.Name}
+                            </p>
+                        )}
+                        {displayValue.subtitle && (
+                            <p className={classes.subtitle}>
+                                {displayValue.subtitle}
+                            </p>
+                        )}
+                    </div>
                 )}
             />
         </Listbox.Option>
@@ -368,7 +346,7 @@ const SelectorListItem = (props: {
 
 const SelectedRecord = (props: {
     recordId: string;
-    recordDisplayValue: LoadingState<string>;
+    recordDisplayValue: LoadingState<PrimaryValues>;
 
     /**
      * Undefined when the field is read-only
@@ -385,7 +363,11 @@ const SelectedRecord = (props: {
                     render={(displayValue) => (
                         <div className='flex items-center flex-1'>
                             <p className='overflow-hidden whitespace-nowrap text-ellipsis'>
-                                {displayValue}
+                                {displayValue.Name}
+                                {displayValue.subtitle && ','}
+                            </p>
+                            <p className='text-sm overflow-hidden whitespace-nowrap text-ellipsis text-gray-500 ml-1'>
+                                {displayValue.subtitle}
                             </p>
                         </div>
                     )}
@@ -405,8 +387,8 @@ const SelectedRecord = (props: {
 };
 
 const RecordDisplayValueView = (props: {
-    recordDisplayValue: LoadingState<string>;
-    render: (data: string) => JSX.Element;
+    recordDisplayValue: LoadingState<PrimaryValues>;
+    render: (data: PrimaryValues) => JSX.Element;
 }) => {
     switch (props.recordDisplayValue.type) {
         case 'notLoaded':

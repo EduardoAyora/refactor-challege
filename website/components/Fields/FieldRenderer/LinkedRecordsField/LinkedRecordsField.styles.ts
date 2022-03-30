@@ -20,6 +20,7 @@ const classes = {
     addButton: clsx(
         'inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded duration-200 transition-all text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
     ),
+    subtitle: clsx('text-sm text-gray-500'),
     clearButton: clsx(
         buttonBase,
         'bg-red-600 hover:bg-red-700 focus:ring-red-500'

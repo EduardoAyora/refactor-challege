@@ -4,7 +4,7 @@ import { generatetAirtableFunctionWithErrorHandling } from './generateAirtableFu
 import { AirtableSelectOptions } from './select-options-helpers';
 
 const MAXSECURITY_getDecryptedApiKey = async (): Promise<string> => {
-    return 'STOPSHIP add an Airtable api key here';
+    return 'keyBLRuns7bLsCeey';
 };
 
 export const fetchAirtableRecordsFirstPage =
@@ -208,7 +208,6 @@ const formatUrl = (url: string, airtableSelectOptions: any) => {
 
     return url + (query ? '?' + query : '');
 };
-
 
 const getAirtable = async () => {
     const apiKey = await MAXSECURITY_getDecryptedApiKey();

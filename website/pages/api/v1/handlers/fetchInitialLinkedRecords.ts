@@ -3,18 +3,18 @@ import {
     FetchInitialLinkedRecordsInput,
     FetchInitialLinkedRecordsOutput,
 } from 'shared/api/types/fetchAllLinkedRecordPrimaryValues';
-import {
-    FieldIdsToAirtableFields,
-    LinkedRecordIdsToAirtableRecords,
-    LinkedTableIdsToPrimaryFields,
-} from 'shared/types/linkedRecordsIdsToPrimaryValues';
+import { LinkedRecordIdsToAirtableRecords } from 'shared/types/linkedRecordsIdsToPrimaryValues';
 import { chunkArray } from 'shared/utils/chunkArray';
 
 import { fetchFieldsForTable } from '../../base-schema/fetchFieldsForTable';
 import { getPrimaryFieldInFields } from '../../base-schema/getPrimaryFieldInFields';
 import { fetchExtensionAndVerifyPassword } from '../../database/extensions/fetchExtension';
 import { fetchLinkedRecords } from '../../helpers/fetchLinkedRecords';
-import { getFieldsNamesToFetchForLinkedRecords } from '../../helpers/getFieldsNamesToFetchForLinkedRecords';
+import { getFieldsNamesToFetchForLinkedRecordsAndFieldNamesToOverride } from '../../helpers/getFieldsNamesToFetchForLinkedRecords';
+import {
+    getLinkedRecordConfigInFields,
+    getOverridedTitleAndSubtitleFields,
+} from './utils';
 
 export const fetchInitialLinkedRecords: v1APIHandler<
     FetchInitialLinkedRecordsInput,
@@ -33,85 +33,130 @@ export const fetchInitialLinkedRecords: v1APIHandler<
         totalRemainingTriesToResolveLookupLinkedRecordFields: 3,
     });
 
-    let linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords = {};
-    const linkedTableIdsToPrimaryFields: LinkedTableIdsToPrimaryFields = {};
-    const linkedTableFieldIdsToAirtableFields: FieldIdsToAirtableFields = {};
+    const linkedRecordFieldInMainTableResult = getLinkedRecordConfigInFields(
+        airtableFieldsInMainTable
+    );
 
-    for (const linkedTableId of Object.keys(args.linkedTableIdsToRecordIds)) {
-        const { recordIds, linkedRecordFieldIdsInMainTable } =
-            args.linkedTableIdsToRecordIds[linkedTableId];
+    if (!linkedRecordFieldInMainTableResult) {
+        throw new Error(
+            'Could not fetch records because the linked records field was not found in the table.'
+        );
+    }
 
-        const { fields: airtableFieldsInLinkedTable } =
-            await fetchFieldsForTable({
-                userUID: extension.userUID,
-                baseId: extension.baseId,
-                tableId: linkedTableId,
-                totalRemainingTriesToResolveLookupLinkedRecordFields: 3,
+    const {
+        linkedRecordFieldConfig: {
+            options: { titleOverrideFieldId, subtitleFieldId },
+        },
+    } = linkedRecordFieldInMainTableResult;
+
+    const linkedTableIds = Object.keys(args.linkedTableIdsToRecordIds);
+
+    const linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords =
+        await linkedTableIds.reduce(async (acc, linkedTableId) => {
+            const { recordIds, linkedRecordFieldIdsInMainTable } =
+                args.linkedTableIdsToRecordIds[linkedTableId];
+
+            if (recordIds.length === 0) return acc;
+
+            const { fields: airtableFieldsInLinkedTable } =
+                await fetchFieldsForTable({
+                    userUID: extension.userUID,
+                    baseId: extension.baseId,
+                    tableId: linkedTableId,
+                    totalRemainingTriesToResolveLookupLinkedRecordFields: 3,
+                });
+
+            const primaryFieldInLinkedTable = getPrimaryFieldInFields({
+                fields: airtableFieldsInLinkedTable,
             });
 
-        const currentLinkedTableFieldsIdsToAirtableFields: FieldIdsToAirtableFields =
-            {};
+            const fieldIdsNestedInMiniExtLinkedRecordFieldConfig =
+                linkedRecordFieldIdsInMainTable
+                    .map(
+                        (linkedRecordFieldIdInMainTable) =>
+                            fieldIdsToNestedFieldIdsInMiniExtFieldConfigs[
+                                linkedRecordFieldIdInMainTable
+                            ]
+                    )
+                    .flat()
+                    .filter(Boolean);
 
-        airtableFieldsInLinkedTable.forEach((field) => {
-            linkedTableFieldIdsToAirtableFields[field.id] = field;
-            currentLinkedTableFieldsIdsToAirtableFields[field.id] = field;
-        });
+            const { fieldNamesToFetch, fieldNamesToOverride } =
+                await getFieldsNamesToFetchForLinkedRecordsAndFieldNamesToOverride(
+                    {
+                        extension,
+                        allFieldIdsToFieldNamesInBase,
+                        primaryFieldInLinkedTable,
+                        linkedRecordFieldIdsInMainTable,
+                        airtableFieldsInMainTable,
+                        airtableFieldsInLinkedTable,
+                        fieldIdsNestedInMiniExtLinkedRecordFieldConfig,
+                        titleOverrideFieldId,
+                        subtitleFieldId,
+                    }
+                );
 
-        const primaryFieldInLinkedTable = getPrimaryFieldInFields({
-            fields: airtableFieldsInLinkedTable,
-        });
-
-        const fieldIdsNestedInMiniExtLinkedRecordFieldConfig =
-            linkedRecordFieldIdsInMainTable
-                .map(
-                    (linkedRecordFieldIdInMainTable) =>
-                        fieldIdsToNestedFieldIdsInMiniExtFieldConfigs[
-                            linkedRecordFieldIdInMainTable
-                        ]
-                )
-                .flat()
-                .filter(Boolean);
-
-        const fieldNamesToFetch = await getFieldsNamesToFetchForLinkedRecords({
-            extension,
-            allFieldIdsToFieldNamesInBase,
-            primaryFieldInLinkedTable,
-            linkedRecordFieldIdsInMainTable,
-            airtableFieldsInMainTable,
-            airtableFieldsInLinkedTable,
-            fieldIdsNestedInMiniExtLinkedRecordFieldConfig,
-        });
-
-        linkedTableIdsToPrimaryFields[linkedTableId] =
-            primaryFieldInLinkedTable;
-
-        if (recordIds.length > 0) {
             const nestedRecordsIds =
                 recordIds.length > 100
                     ? chunkArray(recordIds, 100)
                     : [recordIds];
 
-            for (const recordIds of nestedRecordsIds) {
-                const moreLinkedRecordsWithLinks = await fetchLinkedRecords({
-                    tableId: linkedTableId,
-                    baseId: extension.baseId,
-                    userUID: extension.userUID,
-                    fieldNamesToFetch,
-                    recordIds,
-                });
+            const nestedLinkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords =
+                await nestedRecordsIds.reduce(async (acc, recordIds) => {
+                    const moreLinkedRecordsWithLinks = await fetchLinkedRecords(
+                        {
+                            tableId: linkedTableId,
+                            baseId: extension.baseId,
+                            userUID: extension.userUID,
+                            fieldNamesToFetch,
+                            recordIds,
+                        }
+                    );
 
-                linkedRecordIdsToAirtableRecords = {
-                    ...linkedRecordIdsToAirtableRecords,
-                    ...moreLinkedRecordsWithLinks,
-                };
-            }
-        }
-    }
+                    const recordIdsOfMoreLinkedRecords = Object.keys(
+                        moreLinkedRecordsWithLinks
+                    );
+
+                    const moreLinkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords =
+                        recordIdsOfMoreLinkedRecords.reduce((acc, recordId) => {
+                            const { fields } =
+                                moreLinkedRecordsWithLinks[recordId];
+                            const {
+                                titleOverrideFieldName,
+                                subtitleFieldName,
+                            } = fieldNamesToOverride;
+
+                            const titleAndSubtitleFields =
+                                getOverridedTitleAndSubtitleFields({
+                                    fields,
+                                    primaryFieldNameInLinkedTable:
+                                        primaryFieldInLinkedTable.name,
+                                    titleOverrideFieldName,
+                                    subtitleFieldName,
+                                });
+
+                            return {
+                                ...acc,
+                                [recordId]: {
+                                    id: moreLinkedRecordsWithLinks[recordId].id,
+                                    fields: titleAndSubtitleFields,
+                                },
+                            };
+                        }, {} as LinkedRecordIdsToAirtableRecords);
+
+                    return {
+                        ...acc,
+                        ...moreLinkedRecordIdsToAirtableRecords,
+                    };
+                }, Promise.resolve({} as LinkedRecordIdsToAirtableRecords));
+            return {
+                ...acc,
+                ...nestedLinkedRecordIdsToAirtableRecords,
+            };
+        }, Promise.resolve({} as LinkedRecordIdsToAirtableRecords));
 
     return {
         linkedRecordIdsToAirtableRecords,
-        linkedTableIdsToPrimaryFields,
-        linkedTableFieldIdsToAirtableFields,
     };
 };
 

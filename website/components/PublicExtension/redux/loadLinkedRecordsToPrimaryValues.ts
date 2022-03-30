@@ -62,27 +62,13 @@ export const loadLinkedRecordsToPrimaryValues = createAsyncThunk(
             });
 
             if (result.type === 'success') {
-                const {
-                    linkedRecordIdsToAirtableRecords,
-                    linkedTableIdsToPrimaryFields,
-                    linkedTableFieldIdsToAirtableFields,
-                } = result.data;
+                const { linkedRecordIdsToAirtableRecords } = result.data;
 
                 thunkAPI.dispatch(
                     publicExtensionActions.addMorePrimaryValuesUsingPrimaryFieldsAndRecords(
                         {
                             linkedRecordIdsToAirtableRecords,
                             linkedTableIdsToRecordIds,
-                            linkedTableIdsToPrimaryFields,
-                        }
-                    )
-                );
-
-                thunkAPI.dispatch(
-                    publicExtensionActions.addMoreLinkedRecordIdsToAirtableRecords(
-                        {
-                            linkedRecordIdsToAirtableRecords,
-                            linkedTableFieldIdsToAirtableFields,
                         }
                     )
                 );

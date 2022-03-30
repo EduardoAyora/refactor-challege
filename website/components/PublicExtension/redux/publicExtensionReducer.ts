@@ -1,7 +1,4 @@
-import {
-    AirtableField,
-    AirtableValue,
-} from 'shared/airtable/types';
+import { AirtableField, AirtableValue } from 'shared/airtable/types';
 import {
     ExtensionScreen,
     FormErrors,
@@ -9,18 +6,14 @@ import {
 } from 'shared/api/types/loadExtension';
 
 import {
-    FieldIdsToAirtableFields,
     LinkedRecordIdsToAirtableRecords,
     LinkedRecordsIdsToPrimaryValues,
-    LinkedTableIdsToPrimaryFields,
 } from 'shared/types/linkedRecordsIdsToPrimaryValues';
 import { Mutable } from 'shared/types/Mutable';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import { getReadableStringForAirtableValue } from '../../../airtable/getReadableStringForAirtableValue';
 import { makeNeedToSyncBaseErrorMessage } from '../../../utils/makeNeedToSyncBaseErrorMessage';
 import { PublicExtensionState, ScreenState } from './types';
-import { TableIdsToRecordsIdsToFetch } from 'shared/api/types/fetchAllLinkedRecordPrimaryValues';
 
 const extensionNotLoadedError = (variableName: string) =>
     `Could not update ${variableName} because the extension is not loaded.`;
@@ -34,10 +27,6 @@ const initialState: PublicExtensionState = {
     linkedRecordIdsToPrimaryValues: {
         type: 'notLoaded',
     },
-    linkedRecordIdsToAirtableRecords: {
-        type: 'notLoaded',
-    },
-    linkedTableFieldIdsToAirtableFields: { type: 'notLoaded' },
 };
 
 const getScreenStateInStateForExtensionId = (args: {
@@ -194,59 +183,31 @@ export const publicExtensionSlice = createSlice({
             state,
             action: PayloadAction<{
                 linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords;
-                linkedTableIdsToRecordIds: TableIdsToRecordsIdsToFetch;
-                linkedTableIdsToPrimaryFields: LinkedTableIdsToPrimaryFields;
             }>
         ) => {
-            const newLinkedRecordIdsToPrimaryValues =
+            const initialNewLinkedRecordIdsToPrimaryValues =
                 state.linkedRecordIdsToPrimaryValues?.type === 'loaded'
                     ? state.linkedRecordIdsToPrimaryValues.data
                     : {};
 
-            const linkedTableIds = Object.keys(
-                action.payload.linkedTableIdsToRecordIds
-            );
-
-            const linkedTableIdsToRecordIdsSet = linkedTableIds.reduce(
-                (acc, tableId) => {
-                    acc[tableId] = new Set(
-                        action.payload.linkedTableIdsToRecordIds[
-                            tableId
-                        ].recordIds
-                    );
-                    return acc;
-                },
-                {} as { [tableId: string]: Set<string> }
-            );
-
-            for (const recordId of Object.keys(
+            const linkedRecordIds = Object.keys(
                 action.payload.linkedRecordIdsToAirtableRecords
-            )) {
-                const recordWithLink =
-                    action.payload.linkedRecordIdsToAirtableRecords[recordId];
+            );
 
-                const linkedTableId = linkedTableIds.find((tableId) =>
-                    linkedTableIdsToRecordIdsSet[tableId].has(recordId)
-                );
+            const newLinkedRecordIdsToPrimaryValues = linkedRecordIds.reduce(
+                (acc, recordId) => {
+                    const record =
+                        action.payload.linkedRecordIdsToAirtableRecords[
+                            recordId
+                        ];
 
-                if (!linkedTableId) {
-                    throw new Error(
-                        `Could not find linked table id for record id ${recordId}`
-                    );
-                }
-
-                const primaryField =
-                    action.payload.linkedTableIdsToPrimaryFields[linkedTableId];
-
-                newLinkedRecordIdsToPrimaryValues[recordId] =
-                    getReadableStringForAirtableValue({
-                        value: recordWithLink.fields[primaryField.name],
-                        linkedRecordIdsToPrimaryValues:
-                            newLinkedRecordIdsToPrimaryValues,
-                        airtableFieldConfig: primaryField.config,
-                        doNotReturnRecordIdsForLinkedRecords: true,
-                    }) || 'Unnamed Record';
-            }
+                    return {
+                        ...acc,
+                        [recordId]: record.fields,
+                    };
+                },
+                initialNewLinkedRecordIdsToPrimaryValues
+            );
 
             state.linkedRecordIdsToPrimaryValues = {
                 type: 'loaded',
@@ -272,43 +233,6 @@ export const publicExtensionSlice = createSlice({
                     ...action.payload.linkedRecordIdsToPrimaryValues,
                 },
             };
-        },
-
-        addMoreLinkedRecordIdsToAirtableRecords: (
-            state,
-            action: PayloadAction<{
-                linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords;
-                linkedTableFieldIdsToAirtableFields: FieldIdsToAirtableFields;
-            }>
-        ) => {
-            const existingLinkedRecordIdsToAirtableRecords =
-                state.linkedRecordIdsToAirtableRecords.type === 'loaded'
-                    ? state.linkedRecordIdsToAirtableRecords.data
-                    : {};
-
-            state.linkedRecordIdsToAirtableRecords = {
-                type: 'loaded',
-                data: {
-                    ...existingLinkedRecordIdsToAirtableRecords,
-                    ...(action.payload
-                        .linkedRecordIdsToAirtableRecords as Mutable<LinkedRecordIdsToAirtableRecords>),
-                },
-            };
-
-            const existinglinkedTablesFieldsIdsToAirtableFields =
-                state.linkedTableFieldIdsToAirtableFields.type === 'loaded'
-                    ? state.linkedTableFieldIdsToAirtableFields.data
-                    : {};
-
-            state.linkedTableFieldIdsToAirtableFields = {
-                type: 'loaded',
-                data: {
-                    ...existinglinkedTablesFieldsIdsToAirtableFields,
-                    ...action.payload.linkedTableFieldIdsToAirtableFields,
-                },
-            };
-
-            return state;
         },
 
         linkedRecordIdsToPrimaryValuesFailed: (

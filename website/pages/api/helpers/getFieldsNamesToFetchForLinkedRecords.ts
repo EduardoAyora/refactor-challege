@@ -25,6 +25,8 @@ type Params = {
      * IMPORTANT: This is not all of the linked records in the main table.
      */
     linkedRecordFieldIdsInMainTable: string[];
+    titleOverrideFieldId?: string | null;
+    subtitleFieldId?: string | null;
 };
 
 /**
@@ -33,9 +35,17 @@ type Params = {
  * @returns return names of primary field, display field and lookup fields if they exist for linked records
  */
 
-export const getFieldsNamesToFetchForLinkedRecords: (
+type FieldNamesToOverride = {
+    titleOverrideFieldName?: string;
+    subtitleFieldName?: string;
+};
+
+export const getFieldsNamesToFetchForLinkedRecordsAndFieldNamesToOverride: (
     args: Params
-) => Promise<string[]> = async ({
+) => Promise<{
+    fieldNamesToFetch: string[];
+    fieldNamesToOverride: FieldNamesToOverride;
+}> = async ({
     extension,
     allFieldIdsToFieldNamesInBase,
     linkedRecordFieldIdsInMainTable,
@@ -43,6 +53,8 @@ export const getFieldsNamesToFetchForLinkedRecords: (
     airtableFieldsInMainTable,
     airtableFieldsInLinkedTable,
     fieldIdsNestedInMiniExtLinkedRecordFieldConfig,
+    titleOverrideFieldId,
+    subtitleFieldId,
 }) => {
     const fieldNamesToAirtableFields = airtableFieldsInMainTable.reduce(
         (acc, curr) => {
@@ -104,6 +116,27 @@ export const getFieldsNamesToFetchForLinkedRecords: (
         }
     }
 
+    const fieldNamesToOverride: FieldNamesToOverride = {};
+
+    if (titleOverrideFieldId) {
+        const titleOverrideFieldName =
+            allFieldIdsToFieldNamesInBase[titleOverrideFieldId];
+        if (titleOverrideFieldName) {
+            fieldsNamesToFetch.add(titleOverrideFieldName);
+            fieldNamesToOverride.titleOverrideFieldName =
+                titleOverrideFieldName;
+        }
+    }
+
+    if (subtitleFieldId) {
+        const subtitleFieldName =
+            allFieldIdsToFieldNamesInBase[subtitleFieldId];
+        if (subtitleFieldName) {
+            fieldsNamesToFetch.add(subtitleFieldName);
+            fieldNamesToOverride.subtitleFieldName = subtitleFieldName;
+        }
+    }
+
     const fieldIdsNestedInMiniExtLinkedRecordFieldConfigSet = new Set(
         fieldIdsNestedInMiniExtLinkedRecordFieldConfig
     );
@@ -116,5 +149,5 @@ export const getFieldsNamesToFetchForLinkedRecords: (
         }
     }
 
-    return [...fieldsNamesToFetch];
+    return { fieldNamesToFetch: [...fieldsNamesToFetch], fieldNamesToOverride };
 };
