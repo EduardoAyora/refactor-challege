@@ -117,7 +117,7 @@ export const fetchInitialLinkedRecords: v1APIHandler<
                         moreLinkedRecordsWithLinks
                     );
 
-                    const linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords =
+                    const moreLinkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords =
                         recordIdsOfMoreLinkedRecords.reduce((acc, recordId) => {
                             const { fields } =
                                 moreLinkedRecordsWithLinks[recordId];
@@ -146,7 +146,7 @@ export const fetchInitialLinkedRecords: v1APIHandler<
 
                     return {
                         ...acc,
-                        ...linkedRecordIdsToAirtableRecords,
+                        ...moreLinkedRecordIdsToAirtableRecords,
                     };
                 }, Promise.resolve({} as LinkedRecordIdsToAirtableRecords));
             return {

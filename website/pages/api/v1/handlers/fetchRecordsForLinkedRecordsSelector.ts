@@ -138,7 +138,8 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
     const linkedRecords = linkedTableRecords;
 
     for (const record of linkedRecords) {
-        for (const fieldName of Object.keys(record.fields)) {
+        const fieldNames = Object.keys(record.fields);
+        for (const fieldName of fieldNames) {
             if (!fieldNamesToFetch.includes(fieldName)) {
                 // When we fetch the records, we already only ask Airtable for the primary field and lookup field's
                 // values. But, just in case, we loop over the fields again and remove anything if it exists.
