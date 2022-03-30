@@ -67,8 +67,6 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
 
     const selectedRecordsIds = props.value || emptyValueForLinkedRecords;
 
-    const linkedTableId = props.airtableField.config.options.linkedTableId;
-
     useEffect(() => {
         if (inView) fetchRecordsForLinkedRecordsSelector(searchTerm);
 
@@ -106,14 +104,12 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
         async (searchTerm: string) => {
             const unixEpoch = Date.now();
             // Early return to avoid excessive fetching
-            if (Number(lastFetchUnixEpoch.current) > unixEpoch - 200) {
-                return;
-            }
+            if (Number(lastFetchUnixEpoch.current) > unixEpoch - 200) return;
+
             lastFetchUnixEpoch.current = unixEpoch;
 
-            if (!offset.current) {
-                setIsLoading(true);
-            }
+            if (!offset.current) setIsLoading(true);
+
             try {
                 const result = await executeApiRequest<
                     FetchRecordsForLinkedRecordsSelectorInput,
@@ -129,44 +125,33 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
                         type: 'website',
                     },
                 });
-                if (result.type === 'success') {
-                    if (offset.current) {
-                        setSelectorRecords((oldRecords) =>
-                            oldRecords.concat(result.data.records)
-                        );
-                    } else {
-                        setSelectorRecords(result.data.records);
-                    }
-                    offset.current = result.data.offset;
 
-                    const linkedRecordIdsToAirtableRecordsForSearchResult =
-                        result.data.records.reduce((acc, curr) => {
-                            acc[curr.id] = curr;
-                            return acc;
-                        }, {} as LinkedRecordIdsToAirtableRecords);
+                if (result.type !== 'success') throw new Error(result.message);
 
-                    dispatch(
-                        publicExtensionActions.addMorePrimaryValuesUsingPrimaryFieldsAndRecords(
-                            {
-                                linkedTableIdsToRecordIds: {
-                                    [linkedTableId]: {
-                                        recordIds: Object.keys(
-                                            linkedRecordIdsToAirtableRecordsForSearchResult
-                                        ),
-                                        linkedRecordFieldIdsInMainTable: [
-                                            props.airtableField.id,
-                                        ],
-                                    },
-                                },
-                                linkedRecordIdsToAirtableRecords: {
-                                    ...linkedRecordIdsToAirtableRecordsForSearchResult,
-                                },
-                            }
-                        )
+                if (offset.current) {
+                    setSelectorRecords((oldRecords) =>
+                        oldRecords.concat(result.data.records)
                     );
                 } else {
-                    throw new Error(result.message);
+                    setSelectorRecords(result.data.records);
                 }
+                offset.current = result.data.offset;
+
+                const linkedRecordIdsToAirtableRecordsForSearchResult =
+                    result.data.records.reduce((acc, curr) => {
+                        acc[curr.id] = curr;
+                        return acc;
+                    }, {} as LinkedRecordIdsToAirtableRecords);
+
+                dispatch(
+                    publicExtensionActions.addMorePrimaryValuesUsingPrimaryFieldsAndRecords(
+                        {
+                            linkedRecordIdsToAirtableRecords: {
+                                ...linkedRecordIdsToAirtableRecordsForSearchResult,
+                            },
+                        }
+                    )
+                );
             } catch (error) {
                 simpleLogError(error);
                 setErrorMessage(
@@ -177,12 +162,7 @@ const LinkedRecordsField = (props: LinkedRecordsFieldProps) => {
                 setShouldFetchRecords(false);
             }
         },
-        [
-            props.airtableField.name,
-            props.airtableField.id,
-            dispatch,
-            linkedTableId,
-        ]
+        [props.airtableField.name, dispatch]
     );
 
     const fetchLinkedRecordIdsToPrimaryValuesWithDebounce = useMemo(() => {

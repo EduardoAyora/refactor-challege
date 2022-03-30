@@ -14,7 +14,6 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import { makeNeedToSyncBaseErrorMessage } from '../../../utils/makeNeedToSyncBaseErrorMessage';
 import { PublicExtensionState, ScreenState } from './types';
-import { TableIdsToRecordsIdsToFetch } from 'shared/api/types/fetchAllLinkedRecordPrimaryValues';
 
 const extensionNotLoadedError = (variableName: string) =>
     `Could not update ${variableName} because the extension is not loaded.`;
@@ -184,49 +183,31 @@ export const publicExtensionSlice = createSlice({
             state,
             action: PayloadAction<{
                 linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords;
-                linkedTableIdsToRecordIds: TableIdsToRecordsIdsToFetch;
             }>
         ) => {
-            const newLinkedRecordIdsToPrimaryValues =
+            const initialNewLinkedRecordIdsToPrimaryValues =
                 state.linkedRecordIdsToPrimaryValues?.type === 'loaded'
                     ? state.linkedRecordIdsToPrimaryValues.data
                     : {};
 
-            const linkedTableIds = Object.keys(
-                action.payload.linkedTableIdsToRecordIds
-            );
-
-            const linkedTableIdsToRecordIdsSet = linkedTableIds.reduce(
-                (acc, tableId) => {
-                    acc[tableId] = new Set(
-                        action.payload.linkedTableIdsToRecordIds[
-                            tableId
-                        ].recordIds
-                    );
-                    return acc;
-                },
-                {} as { [tableId: string]: Set<string> }
-            );
-
-            for (const recordId of Object.keys(
+            const linkedRecordIds = Object.keys(
                 action.payload.linkedRecordIdsToAirtableRecords
-            )) {
-                const recordWithLink =
-                    action.payload.linkedRecordIdsToAirtableRecords[recordId];
+            );
 
-                const linkedTableId = linkedTableIds.find((tableId) =>
-                    linkedTableIdsToRecordIdsSet[tableId].has(recordId)
-                );
+            const newLinkedRecordIdsToPrimaryValues = linkedRecordIds.reduce(
+                (acc, recordId) => {
+                    const record =
+                        action.payload.linkedRecordIdsToAirtableRecords[
+                            recordId
+                        ];
 
-                if (!linkedTableId) {
-                    throw new Error(
-                        `Could not find linked table id for record id ${recordId}`
-                    );
-                }
-
-                newLinkedRecordIdsToPrimaryValues[recordId] =
-                    recordWithLink.fields;
-            }
+                    return {
+                        ...acc,
+                        [recordId]: record.fields,
+                    };
+                },
+                initialNewLinkedRecordIdsToPrimaryValues
+            );
 
             state.linkedRecordIdsToPrimaryValues = {
                 type: 'loaded',
