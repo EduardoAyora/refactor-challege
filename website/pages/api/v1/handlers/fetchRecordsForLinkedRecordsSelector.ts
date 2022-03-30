@@ -1,14 +1,8 @@
-import {
-    AirtableField,
-    AirtableLinkedRecordField,
-} from 'shared/airtable/types';
 import { v1APIHandler } from 'shared/api/handler-types';
 import {
     FetchRecordsForLinkedRecordsSelectorInput,
     FetchRecordsForLinkedRecordsSelectorOutput,
 } from 'shared/api/types/fetchRecordsForLinkedRecordsSelector';
-
-import { FieldType } from '@airtable/blocks/models';
 
 import { fetchAirtableRecordsRESTApi } from '../../airtable';
 import { fetchFieldsForTable } from '../../base-schema/fetchFieldsForTable';
@@ -16,29 +10,10 @@ import { getPrimaryFieldInFields } from '../../base-schema/getPrimaryFieldInFiel
 import { fetchExtensionAndVerifyPassword } from '../../database/extensions/fetchExtension';
 import { getFieldsNamesToFetchForLinkedRecordsAndFieldNamesToOverride } from '../../helpers/getFieldsNamesToFetchForLinkedRecords';
 import { getNameFromMiniExtFieldWithConfig } from 'shared/extensions/miniExt-field-configs/id-helpers';
-import { getOverridedTitleAndSubtitleFields } from './utils';
-
-const getLinkedRecordConfigInFields = (args: {
-    fieldName: string;
-    fields: AirtableField[];
-}): {
-    linkedRecordFieldConfig: AirtableLinkedRecordField['config'];
-    linkedRecordFieldIdInMainTable: string;
-} | null => {
-    for (const field of args.fields) {
-        if (
-            field.name === args.fieldName &&
-            field.config.type === FieldType.MULTIPLE_RECORD_LINKS
-        ) {
-            return {
-                linkedRecordFieldConfig: field.config,
-                linkedRecordFieldIdInMainTable: field.id,
-            };
-        }
-    }
-
-    return null;
-};
+import {
+    getLinkedRecordConfigInFields,
+    getOverridedTitleAndSubtitleFields,
+} from './utils';
 
 export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
     FetchRecordsForLinkedRecordsSelectorInput,
@@ -56,10 +31,9 @@ export const fetchRecordsForLinkedRecordsSelector: v1APIHandler<
         tableId: extension.state.tableId,
     });
 
-    const linkedRecordFieldInMainTableResult = getLinkedRecordConfigInFields({
-        fieldName: args.linkedRecordFieldName,
-        fields: airtableFieldsInMainTable,
-    });
+    const linkedRecordFieldInMainTableResult = getLinkedRecordConfigInFields(
+        airtableFieldsInMainTable
+    );
 
     if (!linkedRecordFieldInMainTableResult) {
         throw new Error(

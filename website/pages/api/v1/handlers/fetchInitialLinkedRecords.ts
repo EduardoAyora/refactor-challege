@@ -12,7 +12,7 @@ import { fetchExtensionAndVerifyPassword } from '../../database/extensions/fetch
 import { fetchLinkedRecords } from '../../helpers/fetchLinkedRecords';
 import { getFieldsNamesToFetchForLinkedRecordsAndFieldNamesToOverride } from '../../helpers/getFieldsNamesToFetchForLinkedRecords';
 import {
-    getLinkedRecordConfig,
+    getLinkedRecordConfigInFields,
     getOverridedTitleAndSubtitleFields,
 } from './utils';
 
@@ -33,9 +33,21 @@ export const fetchInitialLinkedRecords: v1APIHandler<
         totalRemainingTriesToResolveLookupLinkedRecordFields: 3,
     });
 
+    const linkedRecordFieldInMainTableResult = getLinkedRecordConfigInFields(
+        airtableFieldsInMainTable
+    );
+
+    if (!linkedRecordFieldInMainTableResult) {
+        throw new Error(
+            'Could not fetch records because the linked records field was not found in the table.'
+        );
+    }
+
     const {
-        options: { titleOverrideFieldId, subtitleFieldId },
-    } = getLinkedRecordConfig(airtableFieldsInMainTable);
+        linkedRecordFieldConfig: {
+            options: { titleOverrideFieldId, subtitleFieldId },
+        },
+    } = linkedRecordFieldInMainTableResult;
 
     let linkedRecordIdsToAirtableRecords: LinkedRecordIdsToAirtableRecords = {};
 
